@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Tower of Babble?</title>
+
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+    <link href="css/bootstrap.css" rel="stylesheet">
+  </head>
+  <body>
+    <div class="container">
+      <div class="col-md-12">
+        <div class="col-md-12">
+          <div class="col-md-12">
+            <div class="col-md-12">
+              <div class="col-md-12">
+          <h1>Tower of Babble? Predicting (in)action by the UN Security Council</h1>
+
+<p><em>This paper was prepared as a final project for General Assembly's Data Science 7 class in Washington, DC in August 2015. The complete library for this project containing all relevant code and data is <a target="_blank" href="https://github.com/wandergram/datsci/tree/master/UN">available on GitHub</a>. </em></p>
+
+<h3>Introduction</h3>
+
+<p>Critics of the United Nations routinely claim that the UN does nothing in times of crisis - in fact, “does the UN… do anything” is among the top predictive search suggestions offered by Google. As the UN’s primary decision-making body, the Security Council has borne the brunt of this criticism. Security Council resolutions “demanding an immediate end to hostilities” but resulting in little concrete action have generated biting satire, and many have come to expect that the Security Council will ultimately fail to act when action is most needed.</p><p>Attempts to predict UN actions inform not only policy, but also operational decisions made by businesses, NGOs, and other international stakeholders that often have major financial implications (whether to expand or contract projects, how to better weather political risk, etc). For activists, understanding what kind of appeals or arguments could lead to a particular type of action on the part of UN can be useful in shaping advocacy efforts.</p><p>For this project, I set out to build a model that could predict whether or not the UN will intervene in a crisis on the basis of discussions held in the Security Council.&nbsp;&nbsp;</p>
+
+<h3>Decision-making in the Security Council: a Primer</h3>
+
+<p>The Security Council is the primary UN body charged with overseeing peace and security. The Council is comprised of 15 members, five of whom hold permanent seats (the United States, the United Kingdom, France, China, and Russia – collectively known as the <strong>P5</strong>), while the remaining ten rotate through two-year terms on the basis of elections held in the UN General Assembly. Each member of the Security Council holds one vote.</p><p>The Council meets on a regular basis to discuss threats to peace. Matters brought before the Council primarily constitute crises such as conflicts, terrorist attacks, and humanitarian disasters. During Security Council meetings, representatives of Member States present their countries’ position on the matter in question and call for certain actions to be taken. These meetings typically result in <strong>resolutions</strong>, with which all UN Member States are obligated to comply. In order for a resolution to be adopted, at least nine votes, including all five votes of the Permanent Members, must be cast in favor. Permanent Members hold veto power, although it is deployed infrequently.</p><p>Resolutions passed by the Security Council may authorize any number of actions to be taken. In certain cases, resolutions may consist of the Council simply deciding to stay apprised of further developments, with statements indicating that the Council “urges”, “welcomes”, or “condemns” certain actions. The Council may also choose to send in experts or observers to report on the situation on the ground, as well as to enact sanctions, travel bans, embargoes, naval blockades, and other measures to stabilize the situation in the context of a crisis.</p><p>Most significantly, the Council may decide to deploy a mission under certain provisions of the UN Charter. So-called “Chapter VI” missions, referencing the section of the Charter that deals with the “pacific settlement of disputes”, typically include a mix of civilian and military observers and advisors to oversee the stabilization process within a given country or region.</p><p>“Chapter VII” missions, on the other hand, invoke specific provisions of Chapter VII of the UN Charter referencing “action with respect to the peace, breaches of the peace and acts of aggression”. These missions consist of an intervening multinational military contingent that is typically allowed to use force to protect civilians, draw apart warring factions, and maintain law and order. In addition, Chapter VII may be invoked to enact or extend sanctions, embargoes, and travel bans against offending groups or regimes. Missions may be extended, expanded, contracted, or drawn down upon the decision of the Security Council.</p><p>A single resolution may authorize the deployment of any number of concurrent measures. Although this remains a matter of some debate in policy discussions in international relations, for the purposes of this project, all measures outside of explicit Chapter VII interventions were viewed as “non-interventionist”.</p>
+
+<h3>Project Question</h3>
+
+<p>Based on the text of Security Council provisional meeting records (inputs) and resolutions (outcomes) passed since 1994, this project seeks to predict whether the Security Council will a) intervene, i.e. deploy, extend, and/or otherwise continue to provide support to a peacekeeping mission or other initiative (sanctions, embargoes) intended to establish and preserve stability, in a country in crisis; or b) instead enact any kind of “soft” measures, such as the deployment of civilian police forces, expert missions, advance teams, etc.</p><p>Issues such as the admission of new member states to the United Nations and the appointment of officials to international tribunals, which also fall under the purview of the Security Council, were left out of this analysis, as they have no immediate bearing on matters of peace and security.</p><h3>Data</h3><p>For inputs, this project uses the texts of 1,236 <a href="http://www.un.org/en/sc/meetings/index.shtml">provisional records of Security Council meetings</a>&nbsp;held between January 1, 1994 and December 31, 2014. The timeframe of this project was limited by data availability: records of meetings held prior to January 1994 are not publicly available.</p><p>For outcomes, this project uses the texts of 1,236 corresponding&nbsp;<a href="http://www.un.org/en/sc/documents/resolutions/">Security Council resolutions</a>&nbsp;passed during the same time period.</p>
+
+<h2>Data Processing</h2>
+
+<h3>1. Obtaining text data</h3>
+
+<p>The texts of meeting records and resolutions were downloaded manually in PDF format from the Security Council website through the UN Official Document System (ODS). Attempts to use a bash (curl) script to automate the download process were unsuccessful, as ODS uses multiple redirects and a firewall to prevent automated downloads.</p><p>All PDF files were subsequently converted to .txt files using PDF converter applications with optical character recognition (OCR). These files were used to create the <a target="_blank" href="https://github.com/wandergram/datsci/tree/master/UN/corpus">corpora of inputs and outcomes</a>, respectively.</p>
+
+<h3>2. Preliminary dataset creation</h3>
+
+<p>A <a href="https://github.com/wandergram/datsci/blob/master/UN/01-scraper.py">scraper</a> was built to create a single CSV file covering all years that would be used as a dataframe to explore the data and build out further natural language processing capabilities. This CSV file contained all of the information provided in table format on the Security Council website by year: the meeting record number, the day the meeting was held, the reference number of the press release, the topic being discussed, and the corresponding Security Council resolution. The scraper read in each table from the Security Council website by year, then compiled them in order.</p><p>The next step was adding a column that would contain the year, extracted from each document number, for <a href="https://github.com/wandergram/datsci/blob/master/UN/02-adding_year.py">further data exploration and groupby operations</a>.&nbsp;&nbsp;&nbsp;</p><p><a href="https://github.com/wandergram/datsci/blob/master/UN/03-cleaning_records.py">Another script was written</a> to clean these records and remove entries that are outside of the scope of this project (e.g. entries where the outcome was a note, a communiqué, or a vetoed resolution – in other words, anything other than a resolution that was adopted).</p><p>The <a href="https://github.com/wandergram/datsci/blob/master/UN/04-final_clean_records.csv">resulting CSV file</a> was used as the basis for the construction of a comprehensive dataset that includes the text of the inputs (meeting records) and the category of the outcomes with binary values (0 for “soft action”, 1 for “intervention”).</p>
+
+<h3>3. Text data exploration</h3>
+
+<p>The next step was to explore and categorize the corpus of outcome files (resolutions) by the type of action described using the Python <em>glob</em> and <em>os</em> modules – each outcome file was read in and renamed to reflect what type of action had been decided upon. A significant amount of time was spent on human learning: reading the outcome files, gaining a deeper understanding of the format of resolutions and of the language used, and determining which phrases would be useful for categorization.</p><p>It was determined that all resolutions containing references to an intervention (missions, sanctions, embargoes) include the line “under Chapter VII”, often in the context of “[a]cting under Chapter VII of the United Nations Charter”. Resolutions referencing the extension or expansion of the mission’s mandate include the phrases “renew the mandate”, “extend the mandate”, “extend its mandate”, “adjust the mandate”, “[d]ecides to extend”, “[d]ecides, in this context, to extend”, “[e]xtends the stationing of”, “[d]ecides to renew for a period of”, “[a]uthorizes the expansion of”, “[a]pproves the expansion of”, “increase the overall force levels”, and “[a]pproves the continuation of”, among others. Files were explored with the <em>glob</em> module to ensure that the search queries returned the correct results; in the case of resolutions authorizing mission expansion, for instance, it was determined that the query phrases should include the first letter of the mission acronym, always a U or an M (e.g. “authorizes the expansion of M” or “approves the expansion of U”), to avoid incorrectly tagging files that may include the phrases “authorizes (approves) the expansion of” with regards to initiatives other than missions, such as “the expansion of powers” or “the expansion of operations”. Note that all mission acronyms begin with either a U (for “United Nations…”) or an M (for “Mission des Nations Unies…”, if the mission is deployed in a French-speaking area). English and French are the working languages of the UN Secretariat.</p><p>Additionally, files were searched for phrases indicative of specific types of soft measures, including the deployment of civilian police, military observers, advance teams, and panels of experts; the establishment of trust funds to finance operations; and the enactment of arms embargoes and travel bans. It was determined that specific phrases are consistently used to reference these actions, such as “prevent the entry into or transit through their territories” (for travel bans) and “the measures on arms” (for arms embargoes). Additionally, the suspension of certain measures and the drawdown of missions were also referenced using specific consistent phrases, including “[d]ecides to terminate the (remaining) prohibitions”, and “terminate the mandate”, “gradual reduction of”, “liquidation”.</p><p>At the end of this process, each file was moved to one of two folders: if the new filename contained a reference to an intervention, the file was moved to the corresponding folder for “intervention” (category 1). All other files were moved to the folder for “soft action” (category 0). <a href="https://github.com/wandergram/datsci/blob/master/UN/05-categorize_outputs_by_folder.py">The full script for this process can be found here</a>.</p><p>Compressed archives of all input and outcome files can be found here:</p><p style="margin-left:22.5pt">1. <a href="https://github.com/wandergram/datsci/blob/master/UN/corpus/meeting_records.zip">Input files (meeting records)</a></p><p style="margin-left:22.5pt">2. <a href="https://github.com/wandergram/datsci/blob/master/UN/corpus/meeting_records_final_categorized.zip">Input files (meeting records), categorized</a></p><p style="margin-left:22.5pt">3. <a href="https://github.com/wandergram/datsci/blob/master/UN/corpus/unscrs_clean.zip">Outcome files (resolutions), clean filenames</a></p><p style="margin-left:22.5pt">4. <a href="https://github.com/wandergram/datsci/blob/master/UN/corpus/unscrs_renamed.zip">Outcome files (resolutions), renamed to reflect the type of action decided upon</a></p><p style="margin-left:22.5pt">5. <a href="https://github.com/wandergram/datsci/blob/master/UN/corpus/unscrs_renamed_categorized.zip">Outcome files (resolutions) renamed and categorized as either “soft action” (non-intervention, category 0) or “chapter 7” (intervention, category 1).</a></p><p>The <strong>Appendix</strong> contains more information on some of the text data exploration that was conducted with these corpora.</p>
+
+<h2>Full Dataset Compilation</h2>
+
+<p>The initial <a href="https://github.com/wandergram/datsci/blob/master/UN/final_clean_records.csv">working CSV file</a>, compiled on the basis of the data collected by the scraper (<a href="https://github.com/wandergram/datsci/blob/master/UN/scraper.py">step 1</a>, <a href="https://github.com/wandergram/datsci/blob/cc1a5786657d599f7fc1c26a09d85c389beb5929/UN/cleaning_records.py">step 2</a>), was expanded into a <a href="https://github.com/wandergram/datsci/blob/master/UN/06-clean_records_copy.csv">complete dataset</a> (<em>note: this file does not include the meeting text</em>) through the inclusion of the following columns:</p><p>1. A “category” column with a value of either 0 or 1, derived from matching the resolution number in the “outcome” column (e.g. S/RES/893) with the directory in which the corresponding file is found (“soft action” or “intervention”). This process had to be done manually, as it was discovered that several files had been incorrectly categorized and that the number of files did not match the number of observations in the dataset (fixed with <a href="https://github.com/wandergram/datsci/blob/master/UN/07-cleaning_composing_data.py">this code</a>). This process also highlighted the fact that text data, due to its sheer richness, cannot always be categorized perfectly with the application of automated methods. &nbsp;In addition, in some cases, it turned out to be significantly more expedient to edit particular pieces of the data manually in Excel.</p><p>2. A “meeting_text” column that contains the text of each input file. The text of each file was read into a list, transformed into a dataframe in Pandas, and merged with the primary dataset. The complete dataset could not be written to CSV format due to an error in the parsing of the text data. However, the resulting Pandas dataframe was sufficient to use scikit-learn to train classifiers and make predictions.</p>
+
+<h3>Codebook</h3>
+
+<p>As a result of these data manipulations, the working dataframe contained the following columns:</p><ul><li><strong>record</strong> - the UN Official Document System (ODS) number of the meeting record document</li><li><strong>day</strong> – the day and month the meeting was held</li><li><strong>press_release</strong> - the ODS number of the corresponding press release; though press releases weren’t included in this study, this data could be useful for other studies</li><li><strong>topic</strong> – the topic of the meeting, usually a country, region, mission, or presentation (e.g. remarks by the UN Secretary-General)</li><li><strong>year</strong> – the year the meeting was held; the year values were retained in a column separate from the days values in order to later perform time-series analysis</li><li><strong>category</strong> – the category of the outcome, coded manually based on the automated file categorization (by folder) done prior&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</li><li><strong>outcome</strong> – the ODS number of the corresponding Security Council resolution &nbsp;&nbsp;&nbsp;</li><li><strong>region</strong> – the region of the world to which each topic pertains; this variable was coded manually in Excel for expediency</li><li><strong>record_number</strong> – the four-digit ODS number of the meeting record, effectively a copy of the “record” column with the alpha values split off; these values were used to compare the observations in the dataset to the files in the corpus to determine why there were initially more observations than there were files in the corpus &nbsp;</li><li><strong>meeting_text</strong> – the text of each meeting</li></ul><p>The complete code for this process, including the Naïve Bayes and logistic regression models that were built for the dataset, <a href="https://github.com/wandergram/datsci/blob/master/UN/08-compiling_dataset_with_text.py">can be found here</a>. In addition, the code is available as an <a href="https://github.com/wandergram/datsci/blob/master/UN/08-compiling_dataset_with_text.ipynb">iPython notebook here</a>.</p><h3>Naïve Bayes in Scikit-learn</h3><p>A Naïve Bayes classifier with an ngram_range of 5 (text broken down into phrases consisting of five words) was trained on the meeting text data (feature column) and category data (response column). An accuracy score of 75% was achieved with these parameters, with the confusion matrix looking thus:</p><ul><li>True Positives: 126</li><li>False Negatives: 63</li><li>False Positives: 12</li><li>True Negatives: 108</li></ul><p>With significantly more false negatives than false positives, it was determined that the model had higher specificity and lower sensitivity. The AUC score of the model was 0.82.</p><p>Although this was beneficial information to evaluate the performance of the model, it did not tell us very much about the data itself. Unlike NLTK, scikit-learn does not have a built-in function to determine the most informative features; however, it was possible to find <a target="_blank" href="http://stackoverflow.com/questions/11116697/how-to-get-most-informative-features-for-scikit-learn-classifiers">open source code</a> that would perform this function with some limitations:</p><pre style="margin-left:120px"><em>def show_most_informative_features(vectorizer, classifier, n=20):
+feature_names = vectorizer.get_feature_names()
+coefs_with_fns = sorted(zip(nb.coef_[0], feature_names))
+top = zip(coefs_with_fns[:n], coefs_with_fns[:-(n + 1):-1])
+for (coef_1, fn_1), (coef_2, fn_2) in top:
+print "\t%.4f\t%-15s\t\t%.4f\t%-15s" % (coef_1, fn_1, coef_2, fn_2)</em></pre><p>When this function was run using the vectorizer and classifier trained above, the following matrix of most informative features for intervention (on the left) and soft action (on the right), respectively, was produced:</p>
+<br />
+
+<div align = "center">
+  <img src = "img/1.png">
+</div> 
+
+<br/ >
+
+
+<p>This process provided some additional insight into the data, but it is intuitively obvious that the “most informative” features are not actually particularly informative in this dataset. With the except of the ngram “people lost lives”, which was found to be strongly correlated with intervention, most other ngrams on both sides of the list are phrases that are standard to every Security Council meeting, no matter its outcome: for example, each meeting record will contain a phrase about the meeting being called to order; each meeting will involve representatives of both the United Kingdom and the United States, as both countries are Permanent Members of the Council; each meeting will reference the president (a rotating position) of the Council; and each meeting will indicate that the records have been translated and will be disseminated in all six official UN languages.</p><p>One way to interpret this finding is that, simply put, what is said in a meeting regarding a particular crisis has little bearing on whether the Council will choose to intervene in this crisis.</p>
+
+<h3>Logistic Regression in Scikit-learn</h3>
+
+<p>A logistic regression model was also deployed, achieving an accuracy score of 84%. Unfortunately, there was no immediately evident way to determine which features this model found to be most informative.</p>
+
+<h3>Naïve Bayes in NLTK – Outcomes</h3>
+
+<p>The Python Natural Language Toolkit (NLTK) offered more nuanced insight into the data. Since resolutions (outcome files) had <a href="https://github.com/wandergram/datsci/blob/master/UN/05-categorize_outputs_by_folder.py">already been classified by folder</a>, NLTK was first used to see how well a Naïve Bayes classifier would perform on the outcome text data.</p><p>The corpus was read in using the NLTK Categorized Plaintext Corpus Reader and later split into training (90% of the files) and testing (10% of the files) sets. A Naïve Bayes classifier was trained on the data, generating an accuracy score of 58%. One reason for the relatively low score could be that the classifier was trained on individual words (tokens), not phrases consisting of several words; however, this appears to be more in line with our earlier observation that what is said during a meeting will not necessarily impact the Council’s decision on whether to intervene. An additional explanation for this relatively low score may be that UN Security Council resolutions tend to use more or less the same language (“UNspeak”) in every iteration, making it more difficult to build a predictive model on the basis of text data retrieved from resolution files.&nbsp;</p><p>Using NLTK’s built-in <em>show_most_informative_features function</em>, the following feature list was generated:</p>
+
+<br />
+
+<div align = "center">
+  <img src = "img/2.png">
+</div> 
+
+<br/ >
+
+
+<p>This feature matrix offered a better picture of the data. We see that “Ivoire” (presumed to always be used in the collocation “Côte d’Ivoire”) was 18.8 times more likely to be used in a resolution authorizing intervention than in a resolution authorizing soft action. The word “sustaining”, probably with respect to force levels (the size of the deployed peacekeeping contingent), had a corresponding ratio of 13.1 : 1, while “immunities” – used primarily in the context of determining the protections and mandates of mission personnel and international tribunals prosecuting war crimes – had an intervention/soft action use ratio of 10.1 : 1. An outlier on the list is “electricity”, likely used to refer to the provision of basic public services in crisis situations. Interestingly, “intensification”, which would be intuitively considered to be related to intensified fighting, was 4.4 times more likely to be used in a resolution choosing soft action over intervention. “Western”, assumed to be used most frequently in the collocation “Western Sahara”, has a 2.1 : 1 soft action to intervention ratio; as we will see later, this is because no Chapter VII actions have been authorized by the Council with respect to the “frozen” conflict in the Western Sahara over the period covered by this study.</p><p><strong>Links:</strong></p><ul><li><a href="https://github.com/wandergram/datsci/blob/master/UN/09-nltk_categorize_unscrs.py">Full code on GitHub</a></li><li><a href="https://github.com/wandergram/datsci/blob/master/UN/09-nltk_categorize_unscrs.ipynb">iPython Notebook with full code on GitHub</a></li></ul>
+
+<h3>Naïve Bayes in NLTK - Inputs</h3><p>After the meeting records (input files) were categorized <a href="https://github.com/wandergram/datsci/blob/master/UN/10-categorize_inputs_by_folder.py">using this code</a>, the same Naïve Bayes classifier as above was <a href="https://github.com/wandergram/datsci/blob/master/UN/11-nltk_categorize_pvs.py">trained on the input data</a>. A significantly higher accuracy score of 87% was achieved with this classifier, and an interesting set of informative features was also generated:</p>
+
+
+<br />
+
+<div align = "center">
+  <img src = "img/3.png">
+</div> 
+
+<br/ >
+
+
+
+<p>The differences between ratios here are less pronounced, but the additional features found in the input corpus are interesting. Personal names (Larsen, Pronk) pertain to UN officials tasked with overseeing a specific mission or area of UN involvement: Jan Pronk was the Special Representative of the Secretary-General in Sudan between 2004 and 2006 (intervention to soft action ratio 2 : 1, given that the UN has acted under Chapter VII in various phases of involvement in Sudan), while Terje Roed-Larsen was a key UN official overseeing the Middle East peace process (soft action to intervention ratio 3 : 1, given that the UN has primarily taken an oversight role with regards to the situation in Israel, Palestine, and Lebanon).</p><p>“Croat” here likely refers to the Bosniak-Croat Federation, an administrative division of Bosnia distinct from the Republika Srpska (or Serb Republic) – it is thus understandable that the term “Croat” would have an intervention to soft action ratio of 3.2 : 1, since UN involvement in the war in Bosnia and in the postwar establishment of the International Criminal Tribunal for the Former Yugoslavia (ICTY) was based upon the provisions of Chapter VII of the UN Charter. Similarly, “Karadzic” refers to Radovan Karadzic, a Bosnian Serb politician currently on trial for war crimes at the ICTY.</p><p>Interestingly, “insecurity” was slightly more likely to be used in meetings that resulted in “soft” resolutions, while relatively innocuous words such as “regularize” and “climbed” were more likely to be used in meetings that resulted in interventions.</p><p>An iPython notebook with the complete code for this process <a href="https://github.com/wandergram/datsci/blob/master/UN/11-nltk_categorize_pvs.ipynb">can be found here</a>.</p>
+
+<h2>Full Dataset Exploration in Pandas</h2>
+
+<p>Having a “category” column with binary values offered a chance to explore and plot the data by region and topic using the Pandas library. The full iPython notebook demonstrating the code and data visualizations obtained <a href="https://github.com/wandergram/datsci/blob/master/UN/12-full_dataset_pandas_exploration.ipynb">is available here</a>.<strong> The following items of interest were noted:</strong></p>
+
+<h4>1. <strong>The mean of all values in the category column was 0.4 on a scale of 0 to 1</strong>.</h4><p>This means that<strong> </strong>on average, since 1994, the UN has been more likely to propose soft action over intervention.</p>
+
+<h4><strong>2. Using split-apply-combine techniques, the following mean values for soft action versus intervention resolutions were found by region, in descending order:</strong></h4>
+
+
+<br />
+
+<div align = "center">
+  <img src = "img/4.png">
+</div> 
+
+<br/ >
+
+
+<p>This indicates that topics relating to sub-Saharan Africa were by far the most frequently discussed at the Council, and that on average, more resolutions were passed authorizing intervention in various crises in the region than soft action initiatives. In Southeast Asia, by contrast, significantly more resolutions authorized soft action over Chapter VII intervention. The Middle East / North Africa (MENA) group is interesting, because even though regional politics have been largely shaped by various conflicts, and the region has been plagued by instability since the Arab Spring, the UN has largely elected to pursue non-interventionist policies in the Middle East.</p><p>Here is the data above visualized with <strong>Google Motion Chart</strong>, where the bubble size is set according to the number of resolutions and the bubble color is set according to the mean value:</p>
+
+<br />
+
+<div align = "center">
+  <img src = "img/5.png">
+</div> 
+
+<br/ >
+
+
+
+  <h4><strong>3. The cross-tabulation of intervention and soft action resolution counts by region is as follows:</strong></h4>
+
+<br />
+
+<div align = "center">
+  <img src = "img/6.png">
+</div> 
+
+<br/ >
+
+
+
+<p>Visualized with <strong>Seaborn</strong>:</p>
+
+<br />
+
+<div align = "center">
+  <img src = "img/7.png">
+</div> 
+
+<br/ >
+
+
+<p>As noted above, in no region except for sub-Saharan Africa did the number of resolutions authorizing intervention exceed the number of resolutions authorizing soft action. This shouldn’t, however, be interpreted as the UN being more likely to decide to intervene in sub-Saharan Africa; it is due to the fact that more episodes demanding intervention happened to occur in sub-Saharan Africa.</p>
+
+<h4><strong>4. The top 30 topics by resolution count are as follows:</strong></h4>
+
+
+<br />
+
+<div align = "center">
+  <img src = "img/8.png">
+</div> 
+
+<br/ >
+
+
+
+<p>The most frequently discussed topic over the past 20 years has been the ongoing conflict in the Democratic Republic of the Congo, which began in the mid-1990s and has continued through the deployment of multiple successive Chapter VII UN peacekeeping missions. Next in line, interestingly, is the Western Sahara – a “frozen” conflict between Morocco and the Saharawis, who wish to vote on independence from Morocco – where the UN has deployed an observer mission, MINURSO, that does not have much power besides maintaining a decades-old ceasefire line and reporting on various political developments.&nbsp;&nbsp;</p><p><span style="font-size:11.0pt">Here is the same data visualized with <strong>Google Charts</strong>:</span></p>
+
+
+<br />
+
+<div align = "center">
+  <img src = "img/9.png">
+</div> 
+
+<br/ >
+
+
+<h4><strong>5. Here is the same list sorted by mean in descending order:</strong></h4>
+
+<br />
+
+<div align = "center">
+  <img src = "img/10.png">
+</div> 
+
+<br/ >
+
+
+<p>Interestingly, Cote d’Ivoire, a country that has not made many headlines internationally, had the highest intervention to soft action ratio among this group of topics, with the conflict between Iraq and Kuwait a close second, likely due to resolutions that enacted embargoes and sanctions against the former Iraqi regime. On the other hand, Rwanda, which survived a well-documented brutal civil war during which the UN failed to prevent the escalation of atrocities (see Appendix), had an intervention mean score of only 0.35.&nbsp;</p><p>Mapped with <strong>Google Charts</strong>, it looks like this:</p>
+
+<br />
+
+<div align = "center">
+  <img src = "img/11.png">
+</div> 
+
+<br/ >
+
+
+
+<h4><strong>6. The most popular topics by year were as follows:</strong></h4>
+
+<ul><li>1994 - Rwanda</li><li>1995 - Bosnia</li><li>1996 - Croatia</li><li>1997-1998 - Angola</li><li>1999 - Western Sahara</li><li>2000 - Sierra Leone</li><li>2001-2002 - Afghanistan</li><li>2003-2004 - DR Congo</li><li>2005 - Côte d'Ivoire</li><li>2006 - Middle East</li><li>2007 - DR Congo</li><li>2008 - Somalia</li><li>2009 - Middle East</li><li>2010 - Côte d'Ivoire</li><li>2011 - Côte d'Ivoire</li><li>2012 - Middle East</li><li>2013 - Somalia</li><li>2014 - Middle East</li></ul><p>Nothing was particularly surprising about this list with the exception of the most popular topic for 2011, when regional instability associated with the Arab Spring was apparently overshadowed by Côte d'Ivoire before the Council.</p>
+
+
+<h4><strong>7. And finally, a time series plot of intervention mean values by year for every year of observation:</strong></h4>
+
+<br />
+
+<div align = "center">
+  <img src = "img/12.png">
+</div> 
+
+<br/ >
+
+
+<p>The Council passed more resolutions authorizing intervention than resolutions authorizing soft action, as evidenced by an annual mean score of greater than 0.5, in 2005, 2007 - 2008, and 2010 – 2013. Overall, there appears to be a definite upward trend in the "intervention mean", which suggests that the Council did not really suffer from "intervention fatigue" after quite a tumultuous decade in the 1990s. However, this could also be explained by any other set of factors: episodes demanding intervention in the 2000s may have been politically "easier" for intervention to be authorized, or the Council could have been willing to invoke certain provisions of Chapter VII without necessarily deploying highly-publicized missions.</p>
+
+<h2>Conclusions and Next Steps</h2>
+
+<p>To my knowledge, among projects made available in the public domain, this project was the first to apply natural language processing techniques in Python to the analysis of UN Security Council records. It was an interesting experiment in the application of NLP and other data science methods to a field (political science, international relations) where such methods still enjoy very modest popularity, and the comprehensive dataset provided some interesting insight into the workings of the Security Council.</p><p>However, the models used ultimately hold little <em>interpretable</em> predictive power. Although certain models performed better than others, it was difficult to determine exactly which words or phrases were the strongest predictors of certain types of action. This can be explained by the fact that decision-making in the Security Council is still an opaque and fundamentally unquantifiable process that hinges on a constantly changing set of factors, with each voting member having its own unique set of considerations and constraints that also change over time. Unlike in the case of, say, a regulator that will probably intervene to fine or shut down a business if it receives too many complaints of a specific nature, the Security Council will choose to intervene only if a certain (unpredictable) number of certain (unpredictable) conditions are met. These conditions will vary from crisis to crisis and cannot be translated from one crisis to the next.</p><p>It would be interesting to expand the dataset by encoding additional variables: for example, by adding (subjective) scaled evaluations of whether a particular meeting involved a strong or weak position in favor of intervention on the part of a P5 state, or whether public opinion in a P5 state at the time of the meeting was strongly for or decidedly against intervention in a given crisis.</p>
+
+<h2>Appendix: Auxiliary Text Exploration</h2>
+
+<h3>Exploring Security Council Resolutions</h3>
+
+<p>In order to gain a better understanding of both the input and outcome corpora, I used the Natural Language Toolkit to explore frequency distributions and learn more about how the UN Security Council “speaks”. Even though the text of resolutions is only used in this project in order to categorize the outcomes as either “intervention” or “soft action”, most observers judge the actions of the Security Council based on the text of resolutions alone. In fact, it is the text of resolutions, containing phrases such as “strongly urges the parties to reach a mutually acceptable solution” and “strongly condemns the acts of violence that have occurred”, that has generated the most criticism from both outside and inside the UN, with observers claiming that the UN lacks the political will and the moral courage to protect civilians during crises and instead limits itself to platitudes.</p><p>The use of the term “genocide” in Security Council resolutions serves as an illustrative example of “UNspeak”. Below I'll demonstrate how a syntax error in my code helped shed light on one of the most frustrating trends in international policy - the lack of political will to "call a spade a spade".</p><h3>Background: the problem with "genocide"</h3>
+
+<h3>Act I. Rwanda.</h3>
+
+<p>In the spring of 1994, nearly a million Rwandans, most of them ethnic Tutsis, were slaughtered in the span of several months during a civil war that became known as one of the most brutal conflicts in human history. Throughout this time and for many months thereafter, the United Nations, the Clinton Administration, and countless other prominent decision-making bodies refused to use the term "genocide" to refer to the reality on the ground in Rwanda. Though everyone understood that the systematic murder of individuals belonging (or thought to belong) to a specific group constitutes genocide, the legal implications of the use of the term were such that it would require decisive action on the part of the international community - action it was neither willing nor prepared to take. The U.S. State Department tiptoed around the issue by infamously referring to "acts of genocide [that] may have occurred" in Rwanda; when asked by a journalist how many "acts of genocide" are required for genocide to be recognized as having taken place, the State Department provided no substantive response. For many years following the Rwandan genocide, courts in France, a country which carefully (and unconscionably) backed the Hutu majority during the war based on long-standing ties, continued to attempt to promulgate the idea of a "double genocide" - the notion that Tutsis allegedly perpetrated just as many "acts of genocide" against the Hutus as did the Hutus against the Tutsis, and that both sides were to blame in equal measure for the horrors that followed.</p><h3>Act II. Bosnia.</h3><p>Between July 11-13 1995, over 8,000 Bosnian Muslim men and boys were massacred by Bosnian Serb factions in the enclave of Srebrenica, which had been declared a "safe area" by the UN two years prior. The Dayton Peace Accords were signed in December 1995, and in the years that followed, countless Serb officials and military commanders have been indicted on charges of genocide and war crimes by the International Criminal Tribunal for the former Yugoslavia (ICTY). Twenty years later, in July 2015, the Russian Federation, a supporter of the Serbs, vetoed a Security Council resolution that would have recognized the events that took place in Srebrenica in the summer of 1995 as "genocide", claiming the use of the term "genocide" in regards to Srebrenica was "not constructive, confrontational and politically motivated". <em>The Atlantic</em> most recently <a href="http://www.theatlantic.com/international/archive/2015/07/srebrenica-massacre-bosnia-anniversary-denial/398846/">outlined how genocide denial with regards to Srebrenica persists around the world</a>.</p><p>As noted above, following World War II and the Nuremberg Trials, the term "genocide" took on legal and political implications - if genocide is proven or believed to have taken place, key players within the international community must act or else be prepared to answer uncomfortable questions on their inaction. Instances in which recognized political regimes (state actors) are believed to have perpetrated genocide, such as the extermination of Armenians by Ottoman authorities in 1915, continue to be highly contentious - if genocide is recognized as such, indictments, prosecutions, and reparations must follow.</p>
+
+<h3>Genocide in UN Security Council resolutions</h3>
+
+<p>Exploring the text of UN Security Council resolutions from 1994 to 2014 allows us to see how the UN has struggled with accepting the use of the term "genocide" over the years.</p><p>I built and read in a corpus of Security Council resolutions with the help of the Plaintext Corpus Reader within the Natural Language Toolkit (NTLK). Next, I plotted the frequency distribution of the term "genocide" across all years. (Note: the complete code for this operation is provided in an <a href="https://github.com/wandergram/datsci/blob/master/UN/13-un_genocide.ipynb">iPython Notebook on GitHub</a>, as well as in a <a href="https://github.com/wandergram/datsci/blob/master/UN/nltk_unscrs.py">separate code file</a>.)</p>
+
+
+<br />
+
+<div align = "center">
+  <img src = "img/13.png">
+</div> 
+
+<br/ >
+
+
+<p>The plot demonstrates some interesting trends: while the UN was generally hesitant to refer to genocide by name in the 1990s, the events (and humiliation) of that decade led the international community to reconsider its position on genocide in 2000, likely in light of the war in Kosovo. Though genocide continued throughout the world, notably in Darfur and South Sudan, in the first decade of the new millennium, the term did not get much airtime at the Security Council until 2014, when we see a sharp uptick in the number of references to genocide in Security Council resolutions.</p><p>An educated hypothesis to explain this sea change has to do with the types of groups believed to have been responsible for genocide in 2014 - unlike in earlier cases, where the perpetrators were largely established state actors (regimes), 2014 saw an intensification of attacks against civilians by non-state actors such as ISIS in Syria and Iraq and Boko Haram in Nigeria. Accusing a standing government of perpetrating genocide requires exceptional political will along a unified front, since the governments in question stand at the helm of UN member states and get a seat at the table in the UN General Assembly on par with all other nations. Moreover, calls for the prosecution of heads of state and government will surely follow such accusations, and that would make for very awkward diplomatic meetings. On the other hand, accusing an amorphous terrorist group of doing the same requires very little, so genocide is much “easier” to recognize as having taken place when the perpetrators operate outside of a multilateral intergovernmental community structure.</p><p><a href="https://github.com/wandergram/datsci/blob/master/UN/nltk_unscrs.py">The code I used</a> includes the function "startswith" and searches for the full term "genocide". This was initially a mistake on my part - I should have searched for "genocid" to allow for the recognition of terms such as "genocidal" and "genocidaire(s)" (perpetrators of genocide, commonly used to refer to Rwandan and Congolese war criminals). However, searching for either of the terms above returns an error - <strong>neither term has been used in Security Council resolutions passed between 1994 and 2014.</strong></p><p>The fact that neither "genocidal" (understood to most frequently be used in the collocation "genocidal regime") nor "genocidaire(s)" have been used in Security Council resolutions is an interesting reflection of the point made earlier - the Security Council shies away from making bold statements accusing regimes and their officials of genocide. In cases where standing regimes are implicated in war crimes, such as those of Darfur and South Sudan (from 2003 onward), the Council seems to prefer the terms "atrocity (-ies)", "massacre(s)", and "cleansing" (presumed to always be used in the collocation "ethnic cleansing"):</p>
+
+<br />
+
+<div align = "center">
+  <img src = "img/14.png">
+</div> 
+
+<br/ >
+
+
+<p>Though ethnic cleansing is a legally defined war crime, it does not always constitute genocide and may consist of expelling civilians from the territories they inhabit, but not necessarily murdering them. "Atrocities" and "massacres", on the other hand, have no legal definition and as such can be used relatively "freely", since there is no clearly defined legal point at which the number of "atrocities" committed reaches a critical mass and must be dealt with by an international tribunal.</p><h3>Genocide in Security Council Meeting Records</h3><p>Statements made during Security Council meetings, on the other hand, demonstrated considerably more latitude in word choice in situations where genocide was believed to have taken place. Below is the frequency distribution for the same terms as shown above across all meeting records for all years (<a href="https://github.com/wandergram/datsci/blob/master/UN/nltk_pvs.py">code available on GitHub</a>):</p>
+
+<br />
+
+<div align = "center">
+  <img src = "img/15.png">
+</div> 
+
+<br/ >
+
+
+
+<p>The plot above demonstrates that representatives speaking before the Council seem more inclined to use stronger terms more frequently to describe their countries’ positions on unfolding crises. There are several reasons for this: statements made during Council meetings place no legal obligations on governments, particularly on the governments of smaller states that hold the majority of the seats on the Council at any given time. These states are not viewed as carrying any “moral obligation” to deploy force in the face of conflicts; the government of a country such as Honduras or Thailand, unlike that of the United States or the United Kingdom, will not face any pressure at home or abroad to send a military contingent to a war zone under UN auspices if their UN representatives term a conflict “genocide”. In addition, unlike in the case of Security Council resolutions, the language of which must be agreed upon by all voting in favor, all Council members are free to formulate their own statements during meetings and do not have to bring their verbal positions in line with the positions of other members.</p><p>Additional natural language processing operations would be beneficial to explore this line of reasoning further. For instance, it would be interesting to see how frequently terms that may carry legal obligations, such as “genocide”, appear in statements made by representatives of the United States, the United Kingdom, and France – countries traditionally considered to be more willing to act as global “gendarmes” – and how these trends have changed over the years, as these governments faced criticism for having failed to act in past conflicts.</p><p><em>All questions, comments, etc would be very much appreciated! As noted, all relevant code and data are <a target="_blank" href="https://github.com/wandergram/datsci/tree/master/UN">available on my GitHub</a>.</em></p>
+<br />
+<br />
+<br />
+<br />
+
+
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+
+    <!-- scripts -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+    <script src="js/bootstrap.min.js"></script>
+  </body>
+</html>
